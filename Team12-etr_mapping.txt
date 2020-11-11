@@ -1,0 +1,117 @@
+
+# Mapping Note
+
+1. MOVIE and GENRE
+
+ - MOVIE.Movie_id = GENRE_OF.mid
+ - GENRE.gen = GENRE_OF.gen
+
+2. MOVIE and ACTOR
+
+ - MOVIE.Movie_id = ACTOR_OF.mid
+ - ACTOR.Actor_id = ACTOR_OF.aid 
+ - ACTOR_OF.Character defines a character of an actor in a movie
+
+3. MOVIE and VERSION
+
+ - MOVIE.Movie_id = VERSION.mid 
+
+4. MOVIE and EPISODE
+
+ - MOVIE.Movie_id = EPISODE.mid
+ - MOVIE.Movie_id = EPISODE.pid 
+ - EPISODE.mid: An episode of a series
+ - EPISODE.pid: A series of which an episode is 
+
+5. MOVIE and DIRECTOR
+
+ - MOVIE.Movie_id = DIRECTOR_OF.mid
+ - DIRECTOR.Director_id = DIRECTOR_OF.did
+
+6. MOVIE and RATING
+
+ - MOVIE.Movie_id = RATING.mid
+
+7. RATING and ACCOUNT
+
+ - ACCOUNT.Account_id = Rating.uid
+
+8. ACCOUNT and MEMBERSHIP
+
+ - MEMBERSHIP.Membership_id = ACCOUNT.sid
+
+9. ACCOUNT and ACCOUNT as ADMIN
+
+ - ACCOUNT.Account_id = ADMIN.uid
+
+# ER Schema 수정사항
+
+1. Entity
+
+- ADMIN added
+- CHARACTER deleted
+- DIRECTOR added
+
+2. Relation
+
+- ADMIN added between ACCOUNT and ACCOUNT relationship
+- DIRECTOR_OF added between MOVIE and DIRECTOR 
+- APPEAR_IN deleted which was between MOVIE and CHARACTER
+- PLAY deleted which was between ACTOR and CHARACTER
+- OF added between MOVIE and ACTOR
+- Relation between EPISODE and VERSION deleted
+- PROVIDE changed into OF 
+ 
+3. Attribute
+ 
+ 1) MOVIE
+ 	- Proudction_country deleted
+	- Type added
+	- Grade changed into is_adult
+	- Release_date deleted
+	- Rating added
+	- Season_number deleted
+
+ 2) GENRE
+ 	- Genre_id added as PRIMARY KEY
+	- Genre_name changed into Genre and not PRIMARY KEY
+
+ 3) ACTOR
+ 	- Actor_age deleted
+	- Filmography deleted
+	- Actor_sex deleted
+	- Birth_year added
+	- Death_year added
+
+ 4) VERSION
+ 	- Localized_title changed into Verison_title
+	- Local_language changed into Language
+	- Location changed into Region
+
+ 5) EPISODE
+ 	- Episode_name deleted
+	- Episode_season added
+
+ 6) RATING
+ 	- Rating changed into Single_rating
+	- Comment deleted
+
+ 7) ACCOUNT
+ 	- Account_id added as PRIMARY KEY
+	- Email_add became not PRIMARY KEY
+	- Address added
+	- job added
+
+ 8) MEMBERSHIP
+ 	- Membership_title changed into Membership_name NOT PRIMARY KEY
+	- Membership_id added as PRIMARY KEY
+
+ 9) DIRECTOR
+ 	- Director_id added as PRIMARY KEY
+	- Director_name added
+	- Birth_year added
+	- Death_year added
+
+
+
+
