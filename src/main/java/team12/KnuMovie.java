@@ -101,8 +101,11 @@ public class KnuMovie {
                     queryMovie(conn, false);
                     break;
                 case 3:
-                    changeAccountInfo(conn);
+                    int logIn = changeAccountInfo(conn);
                     selection = 1;
+                    if (logIn == 0) {
+                        return;
+                    }
                     break;
                 case 4:
                     email = null;
@@ -159,7 +162,7 @@ public class KnuMovie {
     }
 
     // 회원 정보 수정
-    private void changeAccountInfo(Connection conn) {
+    private int changeAccountInfo(Connection conn) {
         int selection = 1;
         while (selection != 9 && selection != 0) {
             try {
@@ -274,11 +277,12 @@ public class KnuMovie {
                         }
                         break;
                     case 9:
-                        return;
+                        return 1;
                     case 0:
                         if (withdraw(conn) != 0) {
                             KnuMovie.clearScreen();
                             p("회원탈퇴가 완료되었습니다...");
+                            return 0;
                         }
                         break;
                 }
@@ -286,6 +290,7 @@ public class KnuMovie {
                 p("error: " + e.getMessage());
             }
         }
+        return 1;
     }
 
     private int selectGenre() {
@@ -335,7 +340,7 @@ public class KnuMovie {
                 int rating = 0;
                 try {
                     rating = scan.nextInt();
-                    if (rating > 10 || rating < 10) {
+                    if (rating > 10 || rating < 0) {
                         KnuMovie.clearScreen();
                         p("잘못 입력하셨습니다. 평가 점수는 0 부터 10 까지만 입력해주세요.");
                         scan.nextLine();
@@ -724,6 +729,7 @@ public class KnuMovie {
             if (res == 1) {
                 KnuMovie.clearScreen();
                 p("영화가 등록되었습니다");
+                p("Enter를 눌러주세요.");
                 try {
                     System.in.read();
                 } catch (IOException e) {
@@ -749,7 +755,7 @@ public class KnuMovie {
         String sql = "";
         int selection = -1;
         p("영상물 수정");
-        p("=================");
+        p("=======================================");
         p("수정 하실 내용을 선택해주세요.");
         p("");
         p("1. 장르");
@@ -1348,10 +1354,13 @@ public class KnuMovie {
                         if (res == 1) {
                             KnuMovie.clearScreen();
                             p("장르가 추가되었습니다.");
+                            p("Enter를 눌러주세요");
                             KnuMovie.pause();
                         }
                     } catch (SQLException e) {
-                        p("error: " + e.getMessage());
+                        p("--------------------------------");
+                        p("| 이미 추가 된 장르입니다.|");
+                        p("--------------------------------");
                     }
                     break;
                 case 2:
@@ -1378,6 +1387,7 @@ public class KnuMovie {
                         if (res == 1) {
                             KnuMovie.clearScreen();
                             p("장르가 삭제되었습니다.");
+                            p("Enter를 눌러주세요");
                             KnuMovie.pause();
                         }
                     } catch (SQLException e) {
