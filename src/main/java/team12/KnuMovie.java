@@ -284,7 +284,6 @@ public class KnuMovie {
                             p("회원탈퇴가 완료되었습니다...");
                             return 0;
                         }
-                        break;
                 }
             } catch (SQLException e) {
                 p("error: " + e.getMessage());
@@ -465,7 +464,9 @@ public class KnuMovie {
                     }
                 } catch (SQLException e) {
                     KnuMovie.clearScreen();
-                    System.err.println("잘못 입력되었습니다. 다시 한번 확인 해주세요.");
+                    System.err.println(
+                            "This is wrong email or already have an email. Please retry.(press the Enter Key)");
+                    KnuMovie.pause();
                     check = 2;
                 }
             }
