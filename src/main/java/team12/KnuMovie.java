@@ -98,7 +98,7 @@ public class KnuMovie {
             KnuMovie.clearScreen();
             switch (selection) {
                 case 1:
-                    queryMovie(conn, false);
+                    queryMovie(conn, false, false);
                     break;
                 case 3:
                     int logIn = changeAccountInfo(conn);
@@ -153,7 +153,7 @@ public class KnuMovie {
                     addMovie(conn);
                     break;
                 case 2:
-                    queryMovie(conn, true);
+                    queryMovie(conn, true, false);
                     break;
                 case 3:
                     ratingLogMenu(conn);
@@ -162,6 +162,10 @@ public class KnuMovie {
                     return;
             }
         }
+    }
+
+    private void confirmAllRating(Connection conn, boolean fromAdminRatingConfirmMenu) {
+        queryMovie(conn, true, fromAdminRatingConfirmMenu);
     }
 
     // 회원 정보 수정
@@ -322,7 +326,8 @@ public class KnuMovie {
     }
 
     // 영화 선택 후 메뉴
-    private int afterSelectMovie(Connection conn, int mid, int uid, boolean isAdmin) {
+    private int afterSelectMovie(Connection conn, int mid, int uid, boolean isAdmin,
+            boolean fromAdminRatingConfirmMenu) {
         int res = 0;
         int selection = 0;
         boolean isError = false;
@@ -331,10 +336,14 @@ public class KnuMovie {
             isError = false;
             if (!isAdmin) {
                 p("1. 평가하기");
+            } else {
+                if (fromAdminRatingConfirmMenu) {
+                    System.out.print("");
+                } else {
+                    p("2. 수정하기");
+                }
             }
-            if (isAdmin) {
-                p("2. 수정하기");
-            }
+
             p("0. 뒤로가기");
             selection = scan.nextInt();
             if (selection == 1) {
@@ -975,7 +984,7 @@ public class KnuMovie {
     }
 
     // 영화 검색
-    private void queryMovie(Connection conn, boolean isAdmin) {
+    private void queryMovie(Connection conn, boolean isAdmin, boolean fromAdminRatingConfirmMenu) {
         String type, startYear, endYear, region, actor;
         int runningTime, genreId, selection = -1;
         Rating rating = new Rating(-1, -1);
@@ -1093,7 +1102,7 @@ public class KnuMovie {
                             movieData.add(i, newMovieData);
                             i++;
                         }
-                        searchResult(movieData, conn, isAdmin);
+                        searchResult(movieData, conn, isAdmin, fromAdminRatingConfirmMenu);
                     } catch (SQLException e) {
                         p("error: " + e.getMessage());
                         KnuMovie.pause();
@@ -1108,7 +1117,8 @@ public class KnuMovie {
         }
     }
 
-    private void searchResult(ArrayList<MovieData> movieData, Connection conn, boolean isAdmin) {
+    private void searchResult(ArrayList<MovieData> movieData, Connection conn, boolean isAdmin,
+            boolean fromAdminRatingConfirmMenu) {
 
         int i = 0;
         int selection = 1;
@@ -1139,48 +1149,66 @@ public class KnuMovie {
                 KnuMovie.clearScreen();
                 try {
                     while (selection != 0) {
-                        Statement stmt = conn.createStatement();
-                        String sql = "SELECT Original_title, rating, Running_time, Start_year, End_year, Type, Is_adult, Genre "
-                                + "FROM MOVIE LEFT JOIN GENRE_OF ON mid = Movie_id LEFT JOIN GENRE ON gen = Genre_id WHERE "
-                                + "Movie_id = " + movieData.get(selection - 1).movieId;
-                        ResultSet rs = stmt.executeQuery(sql);
-                        rs.next();
-                        p("");
-                        p("영상 제목: " + rs.getString(1));
-                        p("평점: " + rs.getDouble(2));
-                        p("러닝타임: " + rs.getInt(3));
-                        if (rs.getDate(4) != null)
-                            p("개봉(방영시작)일: " + rs.getDate(4));
-                        if (rs.getDate(5) != null)
-                            p("방영 종료일: " + rs.getDate(5));
-                        p("영상 종류: " + rs.getString(6));
-                        if (rs.getBoolean(7))
-                            p("청소년 관람 불가");
-                        else
-                            p("청소년 관람 가능");
-                        if (rs.getString(8) != null)
-                            System.out.print("장르: " + rs.getString(8));
-                        while (rs.next()) {
-                            System.out.print(", " + rs.getString(8));
-                        }
-                        sql = "SELECT Actor_name, Movie_id FROM MOVIE LEFT JOIN ACTOR_OF ON mid = Movie_id LEFT JOIN ACTOR ON aid = Actor_id "
-                                + "WHERE " + "Movie_id = " + movieData.get(selection - 1).movieId;
-                        rs = stmt.executeQuery(sql);
-                        rs.next();
-                        if (rs.getString(1) != null) {
+                        if (fromAdminRatingConfirmMenu) {
+                            Statement stmt = conn.createStatement();
+                            String sql = "SELECT Original_title, Single_rating, Email_add"
+                                    + " FROM MOVIE, RATING, ACCOUNT WHERE mid = Movie_id AND uid = Account_id AND "
+                                    + "Movie_id = " + movieData.get(selection - 1).movieId;
+                            ResultSet rs = stmt.executeQuery(sql);
+                            p("title: " + rs.getString(1));
+                            while (rs.next()) {
+                                p("user's email: " + rs.getString(3) + "==> " + rs.getInt(2));
+                            }
                             p("");
-                            System.out.print("배우: " + rs.getString(1));
-                            while (rs.next())
-                                System.out.print(", " + rs.getString(1));
+                            int insideSelection = afterSelectMovie(conn, movieData.get(selection - 1).movieId, uid,
+                                    isAdmin, fromAdminRatingConfirmMenu);
+                            if (insideSelection == 0)
+                                return;
+                        } else {
+                            Statement stmt = conn.createStatement();
+                            String sql = "SELECT Original_title, rating, Running_time, Start_year, End_year, Type, Is_adult, Genre "
+                                    + " FROM MOVIE LEFT JOIN GENRE_OF ON mid = Movie_id LEFT JOIN GENRE ON gen = Genre_id WHERE "
+                                    + "Movie_id = " + movieData.get(selection - 1).movieId;
+                            ResultSet rs = stmt.executeQuery(sql);
+                            rs.next();
+                            p("");
+                            p("영상 제목: " + rs.getString(1));
+                            p("평점: " + rs.getDouble(2));
+                            p("러닝타임: " + rs.getInt(3));
+                            if (rs.getDate(4) != null)
+                                p("개봉(방영시작)일: " + rs.getDate(4));
+                            if (rs.getDate(5) != null)
+                                p("방영 종료일: " + rs.getDate(5));
+                            p("영상 종류: " + rs.getString(6));
+                            if (rs.getBoolean(7))
+                                p("청소년 관람 불가");
+                            else
+                                p("청소년 관람 가능");
+                            if (rs.getString(8) != null)
+                                System.out.print("장르: " + rs.getString(8));
+                            while (rs.next()) {
+                                System.out.print(", " + rs.getString(8));
+                            }
+                            sql = "SELECT Actor_name, Movie_id FROM MOVIE LEFT JOIN ACTOR_OF ON mid = Movie_id LEFT JOIN ACTOR ON aid = Actor_id "
+                                    + "WHERE " + "Movie_id = " + movieData.get(selection - 1).movieId;
+                            rs = stmt.executeQuery(sql);
+                            rs.next();
+                            if (rs.getString(1) != null) {
+                                p("");
+                                System.out.print("배우: " + rs.getString(1));
+                                while (rs.next())
+                                    System.out.print(", " + rs.getString(1));
+                            }
+                            p("");
+                            p("");
+                            int insideSelection = afterSelectMovie(conn, movieData.get(selection - 1).movieId, uid,
+                                    isAdmin, false);
+                            if (insideSelection == 0)
+                                return;
                         }
-                        p("");
-                        p("");
-                        int insideSelection = afterSelectMovie(conn, movieData.get(selection - 1).movieId, uid,
-                                isAdmin);
-                        if (insideSelection == 0)
-                            return;
                     }
                 } catch (SQLException e) {
+                    p("error: " + e.getMessage());
                 }
             }
             p("=================================");
