@@ -335,7 +335,14 @@ public class KnuMovie {
                 int rating = 0;
                 try {
                     rating = scan.nextInt();
+                    if (rating > 10 || rating < 10) {
+                        KnuMovie.clearScreen();
+                        p("잘못 입력하셨습니다. 평가 점수는 0 부터 10 까지만 입력해주세요.");
+                        scan.nextLine();
+                        isError = true;
+                    }
                 } catch (InputMismatchException e) {
+                    KnuMovie.clearScreen();
                     p("잘못 입력하셨습니다.");
                     scan.nextLine();
                     isError = true;
@@ -351,7 +358,11 @@ public class KnuMovie {
                             p("평가가 등록 되었습니다.");
                         }
                     } catch (SQLException e) {
-                        p("잘못 입력하셨습니다.");
+                        KnuMovie.clearScreen();
+                        p("-----------------------------------------------------------------------");
+                        p("| 이미 평가 하셨습니다. 재평가 하시려면 평가 내역 메뉴를 이용해 주세요.|");
+                        p("-----------------------------------------------------------------------");
+                        res = 1;
                     }
                 }
             } else if (selection == 2) {
@@ -408,8 +419,9 @@ public class KnuMovie {
             p("이메일을 입력하세요.");
             String email = scan.next();
             if (!email.contains("@")) {
+                KnuMovie.clearScreen();
                 p("이메일의 형식이 잘못되었습니다. 다시 입력 해주세요.");
-                email = scan.next();
+                continue;
             }
             p("비밀번호를 입력하세요.");
             String password = scan.next();
@@ -417,7 +429,7 @@ public class KnuMovie {
             String fname = scan.next();
             p("성(last name)을 입력하세요.");
             String lname = scan.next();
-
+            KnuMovie.clearScreen();
             p("=========================");
             p("이메일: " + email);
             p("비밀번호: " + password);
@@ -426,7 +438,7 @@ public class KnuMovie {
             p("제대로 입력 됐나요?");
             p("1. 네");
             p("2. 아니요");
-            p("3. 종료");
+            p("3. 뒤로가기");
             check = scan.nextInt();
             if (check == 1) {
                 try {
@@ -439,39 +451,56 @@ public class KnuMovie {
                     ps.setString(4, password);
                     int res = ps.executeUpdate();
                     if (res == 1) {
+                        KnuMovie.clearScreen();
                         p("가입완료!");
+                        p("Enter를 눌러주세요.");
+                        KnuMovie.pause();
+                        KnuMovie.clearScreen();
+                        return;
                     }
                 } catch (SQLException e) {
+                    KnuMovie.clearScreen();
                     System.err.println("잘못 입력되었습니다. 다시 한번 확인 해주세요.");
                     check = 2;
                 }
             }
+            KnuMovie.clearScreen();
         }
     }
 
     // 로그인
     private void signIn(Connection conn) {
-        p("email: ");
-        email = scan.next();
-        p("password: ");
-        pwd = scan.next();
-        String sql = "SELECT * FROM ACCOUNT WHERE Email_add = ? AND Password = ?";
-        try {
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, email);
-            ps.setString(2, pwd);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next() == false) {
-                p("이메일 또는 비밀번호를 다시 확인해주세요.");
-                signIn(conn);
-            } else {
-                uid = rs.getInt(1);
+        boolean isSuccess = false;
+        while (!isSuccess) {
+
+            p("email: (뒤로 가시려면 exit을 입력해주세요)");
+            email = scan.next();
+            if (email.matches("exit")) {
                 KnuMovie.clearScreen();
-                p("로그인 완료!");
-                mainMenu(conn);
+                return;
             }
-        } catch (SQLException e) {
-            p("error: " + e.getMessage());
+            p("password: ");
+            pwd = scan.next();
+            String sql = "SELECT * FROM ACCOUNT WHERE Email_add = ? AND Password = ?";
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, email);
+                ps.setString(2, pwd);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next() == false) {
+                    KnuMovie.clearScreen();
+                    p("이메일 또는 비밀번호를 다시 확인해주세요.");
+                } else {
+                    uid = rs.getInt(1);
+                    isSuccess = true;
+                    KnuMovie.clearScreen();
+                    p("로그인 완료!");
+                    mainMenu(conn);
+                    return;
+                }
+            } catch (SQLException e) {
+                p("error: " + e.getMessage());
+            }
         }
     }
 
@@ -915,14 +944,14 @@ public class KnuMovie {
     private void queryMovie(Connection conn, boolean isAdmin) {
         String type, startYear, endYear, region, actor;
         int runningTime, genreId, selection = -1;
-        double ratingMin, ratingMax;
+        Rating rating = new Rating(-1, -1);
         type = startYear = endYear = region = actor = "";
         runningTime = genreId = -1;
-        ratingMin = ratingMax = -1;
 
         ArrayList<MovieData> movieData = new ArrayList<MovieData>();
 
         while (selection != 0) {
+            KnuMovie.clearScreen();
             p("영상물 검색");
             p("==========================");
             p("1. 제목 입력 및 검색");
@@ -971,7 +1000,8 @@ public class KnuMovie {
                     KnuMovie.clearScreen();
                     break;
                 case 5:
-                    enterRating(ratingMin, ratingMax);
+                    enterRating(rating);
+                    KnuMovie.pause();
                     KnuMovie.clearScreen();
                     break;
                 case 6:
@@ -988,7 +1018,6 @@ public class KnuMovie {
                     p("찾으실 영화 배우를 입력하세요");
                     scan.nextLine();
                     actor = scan.nextLine();
-                    KnuMovie.clearScreen();
                     break;
                 case 0:
                     return;
@@ -1012,11 +1041,11 @@ public class KnuMovie {
                     if (region != "")
                         sql = sql.concat(" AND Region = '" + region + "'");
                     if (actor != "")
-                        sql = sql.concat(" AND Actor_name = '" + actor + "'");
+                        sql = sql.concat(" AND Actor_name LIKE '%" + actor + "%'");
                     if (runningTime != -1)
                         sql = sql.concat(" AND Running_time = " + runningTime);
-                    if (ratingMin != -1 && ratingMax != -1)
-                        sql = sql.concat(" AND rating >= " + ratingMin + " AND rating <= " + ratingMax);
+                    if (rating.minRating != -1 && rating.maxRating != -1)
+                        sql = sql.concat(" AND rating >= " + rating.minRating + " AND rating <= " + rating.maxRating);
                     if (startYear != "")
                         sql = sql.concat(" AND DATE_PART('year',Start_year) = '" + startYear + "'");
                     if (endYear != "")
@@ -1035,9 +1064,10 @@ public class KnuMovie {
                     } catch (SQLException e) {
                         p("error: " + e.getMessage());
                     }
+                    movieData.clear();
                     type = startYear = endYear = region = actor = "";
                     runningTime = genreId = -1;
-                    ratingMin = ratingMax = -1;
+                    rating.minRating = rating.maxRating = -1;
 
                     break;
             }
@@ -1143,35 +1173,40 @@ public class KnuMovie {
         return year;
     }
 
-    private void enterRating(Double ratingMin, Double ratingMax) {
-        ratingMin = 0.0;
-        ratingMax = 0.0;
-        while (ratingMin != -1.0 && ratingMax != -1.0) {
+    private void enterRating(Rating rating) {
+        rating.minRating = 0;
+        rating.maxRating = 0;
+        while (rating.minRating != -1 && rating.maxRating != -1) {
             p("평가 점수 선택");
             p("=======================================");
             p("(0 입력 시 뒤로가기)");
-            p("최소 점수를 입력하세요 (0.0 ~ 10.0): ");
+            p("최소 점수를 입력하세요 (0 ~ 10): ");
             try {
-                ratingMin = scan.nextDouble();
+                rating.minRating = scan.nextInt();
             } catch (InputMismatchException e) {
                 p("잘못 입력하셨습니다. 다시 입력해주세요.");
-                ratingMin = -1.0;
+                KnuMovie.clearScreen();
+                rating.minRating = -1;
             }
-            if (ratingMin == 0.0)
+            if (rating.minRating == 0)
                 return;
-            p("최대 점수를 입하세요 (0.0 ~ 10.0): ");
+            p("최대 점수를 입하세요 (0 ~ 10): ");
             try {
-                ratingMax = scan.nextDouble();
+                rating.maxRating = scan.nextInt();
             } catch (InputMismatchException e) {
                 p("잘못 입력하셨습니다. 다시 입력해주세요.");
-                ratingMax = -1.0;
+                rating.maxRating = -1;
+                KnuMovie.clearScreen();
             }
-            if (ratingMax == 0.0)
-                return;
 
-            if (ratingMin > ratingMax) {
-                p("잘못 입력하셨습니다. 다시 입력해주세요.");
-                ratingMax = ratingMin = -1.0;
+            if (rating.minRating > rating.maxRating) {
+                KnuMovie.clearScreen();
+                p("최소 점수가 최대 점수보다 클 수 없습니다.\n");
+            } else if (rating.minRating > 10 || rating.maxRating > 10 || rating.minRating < 0 || rating.maxRating < 0) {
+                KnuMovie.clearScreen();
+                p("잘못 입력하셨습니다. 다시 입력해주세요.\n");
+            } else if (rating.minRating > 0 && rating.maxRating > 0) {
+                return;
             }
         }
     }
@@ -1366,23 +1401,34 @@ public class KnuMovie {
         } catch (IOException e) {
         }
     }
-}
 
-class MovieData {
-    int row;
-    String title;
-    String year;
-    int movieId;
-    int rating;
+    private class Rating {
+        int minRating = 0;
+        int maxRating = 0;
 
-    MovieData(int row, String title, String year, int movieId) {
-        this.row = row;
-        this.title = title;
-        this.year = year;
-        this.movieId = movieId;
+        Rating(int minRating, int maxRating) {
+            this.minRating = minRating;
+            this.maxRating = maxRating;
+        }
     }
 
-    void setRating(int rating) {
-        this.rating = rating;
+    private class MovieData {
+        int row;
+        String title;
+        String year;
+        int movieId;
+        int rating;
+
+        MovieData(int row, String title, String year, int movieId) {
+            this.row = row;
+            this.title = title;
+            this.year = year;
+            this.movieId = movieId;
+        }
+
+        void setRating(int rating) {
+            this.rating = rating;
+        }
     }
+
 }
