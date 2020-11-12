@@ -1032,10 +1032,9 @@ public class KnuMovie {
                     scan.nextLine();
                     String title = scan.nextLine();
                     KnuMovie.clearScreen();
-                    String sql = "SELECT DISTINCT Original_title, DATE_PART('year', Start_year) AS Year, Movie_id FROM MOVIE, GENRE_OF"
-                            + ", ACTOR, ACTOR_OF, VERSION"
-                            + " WHERE Movie_id = GENRE_OF.mid AND Actor_id = aid AND ACTOR_OF.mid = Movie_id AND VERSION.mid = Movie_id"
-                            + " AND" + " Original_title LIKE '%" + title + "%' ";
+                    String sql = "SELECT DISTINCT Original_title, DATE_PART('year', Start_year) AS Year, Movie_id FROM MOVIE LEFT OUTER JOIN GENRE_OF ON GENRE_OF.mid = Movie_id "
+                            + " LEFT OUTER JOIN ACTOR_OF ON ACTOR_OF.mid = Movie_id LEFT OUTER JOIN ACTOR ON aid = Actor_id LEFT OUTER JOIN VERSION ON VERSION.mid = Movie_id"
+                            + " WHERE " + " Original_title LIKE '%" + title + "%' ";
                     if (!isAdmin) {
                         sql = sql.concat("AND NOT EXISTS (SELECT * FROM RATING WHERE uid = " + uid
                                 + " AND Movie_id = RATING.mid)");
@@ -1069,6 +1068,7 @@ public class KnuMovie {
                         searchResult(movieData, conn, isAdmin);
                     } catch (SQLException e) {
                         p("error: " + e.getMessage());
+                        KnuMovie.pause();
                     }
                     movieData.clear();
                     type = startYear = endYear = region = actor = "";
@@ -1089,7 +1089,10 @@ public class KnuMovie {
         while (selection != 0) {
             if (selection == 1) {
                 for (int j = 1; j <= 10 && i < movieData.size(); j++) {
-                    p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ")");
+                    if (movieData.get(i).year != null)
+                        p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ")");
+                    else
+                        p(i + 1 + ". " + movieData.get(i).title);
                     i++;
                 }
             } else if (selection == 2) {
@@ -1108,7 +1111,7 @@ public class KnuMovie {
                     while (selection != 0) {
                         Statement stmt = conn.createStatement();
                         String sql = "SELECT Original_title, rating, Running_time, Start_year, End_year, Type, Is_adult, Genre "
-                                + "FROM MOVIE, GENRE, GENRE_OF WHERE Movie_id = mid AND Genre_id = gen AND "
+                                + "FROM MOVIE LEFT JOIN GENRE_OF ON mid = Movie_id LEFT JOIN GENRE ON gen = Genre_id WHERE "
                                 + "Movie_id = " + movieData.get(selection - 1).movieId;
                         ResultSet rs = stmt.executeQuery(sql);
                         rs.next();
@@ -1116,7 +1119,8 @@ public class KnuMovie {
                         p("영상 제목: " + rs.getString(1));
                         p("평점: " + rs.getDouble(2));
                         p("러닝타임: " + rs.getInt(3));
-                        p("개봉(방영시작)일: " + rs.getDate(4));
+                        if (rs.getDate(4) != null)
+                            p("개봉(방영시작)일: " + rs.getDate(4));
                         if (rs.getDate(5) != null)
                             p("방영 종료일: " + rs.getDate(5));
                         p("영상 종류: " + rs.getString(6));
@@ -1124,19 +1128,21 @@ public class KnuMovie {
                             p("청소년 관람 불가");
                         else
                             p("청소년 관람 가능");
-                        System.out.print("장르: " + rs.getString(8));
+                        if (rs.getString(8) != null)
+                            System.out.print("장르: " + rs.getString(8));
                         while (rs.next()) {
                             System.out.print(", " + rs.getString(8));
                         }
-                        sql = "SELECT Actor_name FROM ACTOR, ACTOR_OF, MOVIE "
-                                + "WHERE Movie_id = mid AND Actor_id = aid AND " + "Movie_id = "
-                                + movieData.get(selection - 1).movieId;
+                        sql = "SELECT Actor_name, Movie_id FROM MOVIE LEFT JOIN ACTOR_OF ON mid = Movie_id LEFT JOIN ACTOR ON aid = Actor_id "
+                                + "WHERE " + "Movie_id = " + movieData.get(selection - 1).movieId;
                         rs = stmt.executeQuery(sql);
                         rs.next();
-                        p("");
-                        System.out.print("배우: " + rs.getString(1));
-                        while (rs.next())
-                            System.out.print(", " + rs.getString(1));
+                        if (rs.getString(1) != null) {
+                            p("");
+                            System.out.print("배우: " + rs.getString(1));
+                            while (rs.next())
+                                System.out.print(", " + rs.getString(1));
+                        }
                         p("");
                         p("");
                         int insideSelection = afterSelectMovie(conn, movieData.get(selection - 1).movieId, uid,
