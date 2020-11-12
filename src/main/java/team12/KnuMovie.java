@@ -1413,14 +1413,12 @@ public class KnuMovie {
     }
 
     private class MovieData {
-        int row;
         String title;
         String year;
         int movieId;
         int rating;
 
         MovieData(int row, String title, String year, int movieId) {
-            this.row = row;
             this.title = title;
             this.year = year;
             this.movieId = movieId;
