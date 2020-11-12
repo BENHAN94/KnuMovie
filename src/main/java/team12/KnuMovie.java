@@ -156,9 +156,6 @@ public class KnuMovie {
                     queryMovie(conn, true, false);
                     break;
                 case 3:
-                    confirmAllRating(conn, true);
-                    break;
-                case 3:
                     ratingLogMenu(conn);
                     break;
                 case 4:
@@ -167,7 +164,7 @@ public class KnuMovie {
         }
     }
 
-    private void confirmAllRating(Connection conn, boolean fromAdminRatingConfirmMenu) {
+    private void logByMovie(Connection conn, boolean fromAdminRatingConfirmMenu) {
         queryMovie(conn, true, fromAdminRatingConfirmMenu);
     }
 
@@ -444,6 +441,7 @@ public class KnuMovie {
             selection = scan.nextInt();
             switch (selection) {
                 case 1:
+                    logByMovie(conn, true);
                     break;
                 case 2:
                     logByAccount(conn);
@@ -1158,11 +1156,12 @@ public class KnuMovie {
                                     + " FROM MOVIE, RATING, ACCOUNT WHERE mid = Movie_id AND uid = Account_id AND "
                                     + "Movie_id = " + movieData.get(selection - 1).movieId;
                             ResultSet rs = stmt.executeQuery(sql);
-                            p("title: " + rs.getString(1));
+                            p(movieData.get(selection - 1).title + " 의 평가");
+                            p("=======================================================");
                             while (rs.next()) {
-                                p("user's email: " + rs.getString(3) + "==> " + rs.getInt(2));
+                                p(rs.getString(3) + " ==> " + rs.getInt(2) + " 점");
                             }
-                            p("");
+                            p("=======================================================");
                             int insideSelection = afterSelectMovie(conn, movieData.get(selection - 1).movieId, uid,
                                     isAdmin, fromAdminRatingConfirmMenu);
                             if (insideSelection == 0)
