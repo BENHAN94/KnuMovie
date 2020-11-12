@@ -92,8 +92,8 @@ public class KnuMovie {
             p("2. 평가 내역 확인");
             p("3. 회원 정보 수정");
             p("4. 로그아웃");
-            p("5. 종료");
-            p("6. 관리자 모드");
+            p("5. 관리자 모드");
+            p("0. 종료");
             selection = scan.nextInt();
             KnuMovie.clearScreen();
             switch (selection) {
@@ -111,13 +111,13 @@ public class KnuMovie {
                     email = null;
                     pwd = null;
                     return;
-                case 5:
+                case 0:
                     System.exit(0);
-                case 6:
+                case 5:
                     adminMenu(conn);
                     break;
                 case 2:
-                    showRatingLog(conn);
+                    showRatingLog(conn, null);
             }
         }
     }
@@ -154,6 +154,9 @@ public class KnuMovie {
                     break;
                 case 2:
                     queryMovie(conn, true);
+                    break;
+                case 3:
+                    ratingLogMenu(conn);
                     break;
                 case 4:
                     return;
@@ -284,7 +287,6 @@ public class KnuMovie {
                             p("회원탈퇴가 완료되었습니다...");
                             return 0;
                         }
-                        break;
                 }
             } catch (SQLException e) {
                 p("error: " + e.getMessage());
@@ -415,6 +417,31 @@ public class KnuMovie {
         }
         return selection;
     }
+
+    void ratingLogMenu(Connection conn) {
+
+        int selection = 0;
+
+        while (selection != 3) {
+            KnuMovie.clearScreen();
+            p("평가 기록");
+            p("====================");
+            p("1. 영화별 평가 기록");
+            p("2. 회원별 평가 기록");
+            p("3. 뒤로가기");
+            selection = scan.nextInt();
+            switch (selection) {
+                case 1:
+                    break;
+                case 2:
+                    logByAccount(conn);
+                    break;
+                case 3:
+                    return;
+            }
+        }
+    }
+
     // ================================functions===========================
 
     // 회원가입
@@ -465,7 +492,8 @@ public class KnuMovie {
                     }
                 } catch (SQLException e) {
                     KnuMovie.clearScreen();
-                    System.err.println("잘못 입력되었습니다. 다시 한번 확인 해주세요.");
+                    System.err.println("잘못된 이메일이거나 이미 존재하는 이메일입니다. 다시 입력해주세요.(Enter키를 눌러주세요.)");
+                    KnuMovie.pause();
                     check = 2;
                 }
             }
@@ -1082,12 +1110,12 @@ public class KnuMovie {
 
     private void searchResult(ArrayList<MovieData> movieData, Connection conn, boolean isAdmin) {
 
-        p("검색 결과");
-        p("=================================");
         int i = 0;
         int selection = 1;
         while (selection != 0) {
             if (selection == 1) {
+                p("검색 결과");
+                p("=================================");
                 for (int j = 1; j <= 10 && i < movieData.size(); j++) {
                     if (movieData.get(i).year != null)
                         p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ")");
@@ -1096,6 +1124,8 @@ public class KnuMovie {
                     i++;
                 }
             } else if (selection == 2) {
+                p("검색 결과");
+                p("=================================");
                 i -= 11;
                 i /= 10;
                 i *= 10;
@@ -1224,12 +1254,18 @@ public class KnuMovie {
     }
 
     // 평가 내역 확인
-    private void showRatingLog(Connection conn) {
+    private void showRatingLog(Connection conn, String email) {
         ArrayList<MovieData> movieData = new ArrayList<MovieData>();
         int selection = 1;
         int i = 0;
-        String sql = "SELECT Original_title, DATE_PART('year', Start_year), Movie_id, Single_rating FROM RATING, MOVIE "
-                + "WHERE uid = " + uid + " AND mid = Movie_id";
+        String sql = "";
+        if (email == null) {
+            sql = "SELECT Original_title, DATE_PART('year', Start_year), Movie_id, Single_rating FROM RATING, MOVIE "
+                    + "WHERE uid = " + uid + " AND mid = Movie_id";
+        } else {
+            sql = "SELECT Original_title, DATE_PART('year', Start_year), Movie_id, Single_rating FROM RATING, MOVIE, ACCOUNT "
+                    + "WHERE Email_add = '" + email + "'" + " AND uid = Account_id AND mid = Movie_id";
+        }
         try {
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
@@ -1240,25 +1276,36 @@ public class KnuMovie {
                 movieData.add(movie);
             }
         } catch (SQLException e) {
-
+            p(e.getMessage());
+            KnuMovie.pause();
         }
         i = 0;
-        p("===============================================");
         while (selection != 0) {
+
             if (selection == 1) {
+                KnuMovie.clearScreen();
+                if (email != null)
+                    p(email + " 님의 평가");
+                p("===============================================");
                 for (int j = 1; j <= 10 && i < movieData.size(); j++) {
-                    p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ")");
+                    p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ") ==>  "
+                            + movieData.get(i).rating + " 점");
                     i++;
                 }
             } else if (selection == 2) {
+                KnuMovie.clearScreen();
+                if (email != null)
+                    p(email + " 님의 평가");
+                p("===============================================");
                 i -= 11;
                 i /= 10;
                 i *= 10;
                 for (int j = 1; j <= 10; j++) {
-                    p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ")");
+                    p(i + 1 + ". " + movieData.get(i).title + " (" + movieData.get(i).year + ") ==>  "
+                            + movieData.get(i).rating + " 점");
                     i++;
                 }
-            } else {
+            } else if (selection == 3 && email == null) {
                 p("영화를 선택해주세요");
                 selection = scan.nextInt();
                 KnuMovie.clearScreen();
@@ -1304,9 +1351,10 @@ public class KnuMovie {
 
                     }
                 }
+                KnuMovie.clearScreen();
             }
+            p("===============================================");
 
-            p("=================================");
             if (i < movieData.size())
                 p("1. 다음");
             int j = i - 1;
@@ -1314,10 +1362,12 @@ public class KnuMovie {
             j *= 10;
             if (j > 0)
                 p("2. 이전");
-            p("3. 선택");
+            if (email == null)
+                p("3. 선택");
             p("0. 뒤로가기");
             selection = scan.nextInt();
         }
+
     }
 
     private void updateGenre(Connection conn, int mid) {
@@ -1405,6 +1455,25 @@ public class KnuMovie {
             }
         }
     }
+
+    void logByAccount(Connection conn) {
+        KnuMovie.clearScreen();
+        boolean isError = true;
+        String userEmail = "";
+        while (isError) {
+            p("검색할 이메일을 입력해주세요: ");
+            userEmail = scan.next();
+            try {
+                isError = false;
+            } catch (InputMismatchException e) {
+                p("잘못 입력하셨습니다. 다시 입력해주세요.");
+                isError = true;
+            }
+        }
+        showRatingLog(conn, userEmail);
+    }
+
+    // ===========================UTILL
 
     public static void clearScreen() {
         System.out.print("\033[H\033[2J");
