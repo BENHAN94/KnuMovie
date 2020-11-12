@@ -103,7 +103,7 @@ public class KnuMovie {
                 case 3:
                     changeAccountInfo(conn);
                     selection = 1;
-                    break;
+                    return;
                 case 4:
                     email = null;
                     pwd = null;
@@ -280,7 +280,7 @@ public class KnuMovie {
                             KnuMovie.clearScreen();
                             p("회원탈퇴가 완료되었습니다...");
                         }
-                        break;
+                        return;
                 }
             } catch (SQLException e) {
                 p("error: " + e.getMessage());
